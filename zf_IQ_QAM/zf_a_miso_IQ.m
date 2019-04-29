@@ -44,11 +44,12 @@ IQ_zf_mod(1, :) = real(reshape(IQ_zf_mod_temp(1, :, :), 1, []));
 IQ_zf_mod(2, :) = real(reshape(IQ_zf_mod_temp(2, :, :), 1, []));
 
 %% - - - IQ Demod - - - %%
-Rx_data = reshape(IQ_zf_mod(1, :), 100, []);
-rx_zf_info = demodIQ(deCos, deSin, Rx_data, sample_per_symbol);
+rx_data.one = reshape(IQ_zf_mod(1, :), 100, []);
+rx_data.two = reshape(IQ_zf_mod(2, :), 100, []);
+rx_zf_info.one = demodIQ(deCos, deSin, rx_data.one, sample_per_symbol);
+rx_zf_info.two = demodIQ(deCos, deSin, rx_data.two, sample_per_symbol);
 
 %% - - - QAM Demod - - - %%
-rx_zf_qam_demod = qamdemod(rx_zf_info, QAM_order);
-rx_zf_bit = de2bi(rx_zf_qam_demod, k);
+% rx_zf_qam_demod(1, :) = qamdemod(rx_zf_info.one, QAM_order);
+% rx_zf_qam_demod(2, :) = qamdemod(rx_zf_info.two, QAM_order);
 
-[numErrors_zf, ber_zf] = biterr(rx_zf_bit(:), randi_bit(:));
