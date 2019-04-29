@@ -8,11 +8,11 @@ fc = 10e3;
 fs = 50e3;
 QAM_order = 16;
 k = log2(QAM_order);
-sample_per_time = 1000;
+symble_per_time = 1000;
 sample_per_symbol = 100;
 deltaT = 1 / fs;
 
-randi_dec = randi(QAM_order, sample_per_time, 1) - 1;
+randi_dec = randi(QAM_order, symble_per_time, 1) - 1;
 randi_bit = de2bi(randi_dec, k);
 info = qammod(randi_dec, QAM_order);
 
@@ -24,7 +24,7 @@ channel_gain = [0.69, 0.18, 0.05, 0.07, 0.02];
 channel_delay = [0, 19, 22, 28, 41] * 1e-4;
 
 symbol_rate = fs / sample_per_symbol;
-SigTim = sample_per_time / symbol_rate;
+SigTim = symble_per_time / symbol_rate;
 DataTim = 0 : deltaT : SigTim - deltaT;
 CarrierSig = exp(jay * 2 * pi * fc * DataTim);
 deCos = cos(2 * pi * fc * (0 : sample_per_symbol - 1) / fs);
@@ -66,11 +66,11 @@ Rx_data_ri = reshape(rx_data, 100, []);
 
 counter = 1;
 snr = [-10 : 5];
-for snr_i = snr
+for counter_i = snr
 %% - - - AWGN Channel- - - %%
-Rx_data = awgn(Rx_data_ri, snr_i, 'measured');
-Rx_info_data = awgn(Rx_info_data_ri, snr_i, 'measured');
-imgPath = ['./image/zf_compare_', num2str(snr_i), '.png'];
+Rx_data = awgn(Rx_data_ri, counter_i, 'measured');
+Rx_info_data = awgn(Rx_info_data_ri, counter_i, 'measured');
+imgPath = ['./image/zf_compare_', num2str(counter_i), '.png'];
 
 %% - - - IQ Demod - - - %%
 rx_info = demodIQ(deCos, deSin, Rx_info_data, sample_per_symbol);
@@ -115,13 +115,14 @@ end
 % title('Absolute values of impulse responses'); % Absolute values of channel impulse response
 
 figure('Name', 'BER')
-semilogy(snr, ber);
+semilogy(snr, ber, 'LineWidth', 1.5);
 hold on;
-semilogy(snr, ber_zf);
+semilogy(snr, ber_zf, 'LineWidth', 1.5);
 grid on;
-legend('BER without ZF', 'BER with ZF');
+legend('BER without ZF', 'BER with ZF', 'location', 'southwest');
 xlabel('SNR');ylabel('SNR');
-title('BER under AWGN & ISI');
+title_char = [num2str(QAM_order), 'QAM BER under AWGN & ISI'];
+title(title_char);
 figloc;
 
 
