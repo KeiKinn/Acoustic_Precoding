@@ -1,7 +1,7 @@
 clear all;
 close all;
 clc
-% 2发1收的MISO，发射采用 Alamouti STBC ，zf预编码后调制输出
+% 2发2收的MIMO，发射采用 Alamouti STBC ，zf预编码后在模拟域调制输出
 jay = sqrt(-1);
 fc = 10e3;
 fs = 50e3;
@@ -19,11 +19,12 @@ deCos = cos(2 * pi * fc * (0 : sample_per_symbol - 1) / fs);
 deSin =  -sin(2 * pi * fc * (0 : sample_per_symbol - 1) / fs);
 
 randi_dec = randi(QAM_order, symble_per_time, 1) - 1;
-randi_bit = de2bi(randi_dec, k);
+randi_bit = de2bi(randi_dec, k);    % 误码率统计用
 info = qammod(randi_dec, QAM_order);
 
 %% - - - Channel- - - %%
-
+H = [1, 0.5; 0.8, 0.7];
+inv_H = (H' * H) \ H';
 
 %% - - - STBC - - - %%
 stbc_temp = kron(reshape(info, 2, []), ones(1, 2));
@@ -43,13 +44,29 @@ end
 IQ_zf_mod(1, :) = real(reshape(IQ_zf_mod_temp(1, :, :), 1, []));
 IQ_zf_mod(2, :) = real(reshape(IQ_zf_mod_temp(2, :, :), 1, []));
 
+%% - - - RX - - - %%
+for counter_i = 1 : length(IQ_zf_mod)
+    rx_temp(:, counter_i) = H * IQ_zf_mod(:, counter_i);
+end
+
 %% - - - IQ Demod - - - %%
-rx_data.one = reshape(IQ_zf_mod(1, :), 100, []);
-rx_data.two = reshape(IQ_zf_mod(2, :), 100, []);
-rx_zf_info.one = demodIQ(deCos, deSin, rx_data.one, sample_per_symbol);
-rx_zf_info.two = demodIQ(deCos, deSin, rx_data.two, sample_per_symbol);
+rx_data.one = reshape(rx_temp(1, :), 100, []);
+rx_data.two = reshape(rx_temp(2, :), 100, []);
+rx_zf_info(1, :) = demodIQ(deCos, deSin, rx_data.one, sample_per_symbol);
+rx_zf_info(2, :) = demodIQ(deCos, deSin, rx_data.two, sample_per_symbol);
+
+%% - - - STBC Estimate - - - %%
+% 通过信道补偿估计STBC的值
+for counter_i = 1 : length(rx_zf_info)
+rx_est_stbc(:, counter_i) = inv_H * rx_zf_info(:, counter_i);
+end
 
 %% - - - QAM Demod - - - %%
 % rx_zf_qam_demod(1, :) = qamdemod(rx_zf_info.one, QAM_order);
 % rx_zf_qam_demod(2, :) = qamdemod(rx_zf_info.two, QAM_order);
 
+%% - - - Plot - - - %%
+figure(1)
+plot(real(stbc_temp), imag(stbc_temp), 'co');
+hold on;
+plot(real(rx_est_stbc), imag(rx_est_stbc), 'r*');
