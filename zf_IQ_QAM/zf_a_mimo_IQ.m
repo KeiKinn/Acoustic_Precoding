@@ -2,6 +2,7 @@ clear all;
 close all;
 clc
 % 2发2收的MIMO，发射采用 Alamouti STBC ，zf预编码后在模拟域调制输出
+% 不包含信道估计
 jay = sqrt(-1);
 fc = 10e3;
 fs = 50e3;
@@ -23,7 +24,10 @@ randi_bit = de2bi(randi_dec, k);    % 误码率统计用
 info = qammod(randi_dec, QAM_order);
 
 %% - - - Channel- - - %%
-H = [1, 0.5; 0.8, 0.7];
+H_base = [1, 0.5; 0.8, 0.7];
+H_fliplr = conj(fliplr(H_base));
+H_fliplr(:, 2) = -H_fliplr(:, 2);
+H = [H_base; H_fliplr];
 inv_H = (H' * H) \ H';
 
 %% - - - STBC - - - %%
@@ -46,7 +50,7 @@ IQ_zf_mod(2, :) = real(reshape(IQ_zf_mod_temp(2, :, :), 1, []));
 
 %% - - - RX - - - %%
 for counter_i = 1 : length(IQ_zf_mod)
-    rx_temp(:, counter_i) = H * IQ_zf_mod(:, counter_i);
+    rx_temp(:, counter_i) = H_base * IQ_zf_mod(:, counter_i);
 end
 
 %% - - - IQ Demod - - - %%
@@ -57,16 +61,20 @@ rx_zf_info(2, :) = demodIQ(deCos, deSin, rx_data.two, sample_per_symbol);
 
 %% - - - STBC Estimate - - - %%
 % 通过信道补偿估计STBC的值
-for counter_i = 1 : length(rx_zf_info)
-rx_est_stbc(:, counter_i) = inv_H * rx_zf_info(:, counter_i);
-end
+% for counter_i = 1 : length(rx_zf_info)
+% rx_est_stbc(:, counter_i) = inv_H * rx_zf_info(:, counter_i);
+% end
+rx_dt = rx_zf_info(:, 1 : 2 : end);
+rx_dt = [rx_dt; rx_zf_info(:, 2 : 2 : end)];
 
 %% - - - QAM Demod - - - %%
-% rx_zf_qam_demod(1, :) = qamdemod(rx_zf_info.one, QAM_order);
-% rx_zf_qam_demod(2, :) = qamdemod(rx_zf_info.two, QAM_order);
+% rx_zf_qam_demod(1, :) = qamdemod(rx_est_stbc(1, :), QAM_order);
+% rx_zf_qam_demod(2, :) = qamdemod(rx_est_stbc(2, :), QAM_order);
 
 %% - - - Plot - - - %%
-figure(1)
-plot(real(stbc_temp), imag(stbc_temp), 'co');
-hold on;
-plot(real(rx_est_stbc), imag(rx_est_stbc), 'r*');
+% figure(1)
+% plot(real(stbc_temp), imag(stbc_temp), 'co');
+% hold on;
+% plot(real(rx_est_stbc), imag(rx_est_stbc), 'r*');
+% hold on;
+% plot(real(rx_zf_info), imag(rx_zf_info), 'd')
