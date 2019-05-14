@@ -24,7 +24,7 @@ randi_bit = de2bi(randi_dec, k);    % 误码率统计用
 info = qammod(randi_dec, QAM_order);
 
 %% - - - Channel- - - %%
-H_base = [1, 0.5; 0.8, 0.7];
+H_base = [1, 0; 0, 1];
 H_fliplr = conj(fliplr(H_base));
 H_fliplr(:, 2) = -H_fliplr(:, 2);
 H = [H_base; H_fliplr];
@@ -32,8 +32,9 @@ inv_H = (H' * H) \ H';
 
 %% - - - STBC - - - %%
 stbc_temp = kron(reshape(info, 2, []), ones(1, 2));
-stbc_temp(1 , 2 : 2 : end) = -conj(stbc_temp(1 , 2 : 2 : end));
-stbc_temp(2 , 2 : 2 : end) = conj(stbc_temp(2 , 2 : 2 : end));
+stbc_temp(1 , 2 : 2 : end) = conj(stbc_temp(1 , 2 : 2 : end));
+stbc_temp(2 , 2 : 2 : end) = -conj(stbc_temp(2 , 2 : 2 : end));
+stbc_temp(:, 2: 2: end) = flip(stbc_temp(:, 2: 2: end));
 
 %% - - - ZF - - - %%
 coded_info = stbc_temp;
@@ -65,11 +66,21 @@ rx_zf_info(2, :) = demodIQ(deCos, deSin, rx_data.two, sample_per_symbol);
 % rx_est_stbc(:, counter_i) = inv_H * rx_zf_info(:, counter_i);
 % end
 rx_dt = rx_zf_info(:, 1 : 2 : end);
-rx_dt = [rx_dt; rx_zf_info(:, 2 : 2 : end)];
+rx_dt = [rx_dt; conj(rx_zf_info(:, 2 : 2 : end))];
+
+stbc_est = inv_H * rx_dt;
+stbc_est(2, :) = stbc_est(2, :);
 
 %% - - - QAM Demod - - - %%
-% rx_zf_qam_demod(1, :) = qamdemod(rx_est_stbc(1, :), QAM_order);
-% rx_zf_qam_demod(2, :) = qamdemod(rx_est_stbc(2, :), QAM_order);
+rx_zf_qam_demod(1, :) = qamdemod(stbc_est(1, :), QAM_order);
+rx_zf_qam_demod(2, :) = qamdemod(stbc_est(2, :), QAM_order);
+rx_decode = zeros(1, 2 * length(rx_zf_qam_demod));
+rx_decode(1 : 2 :end) = rx_zf_qam_demod(1, :);
+rx_decode(2 : 2 :end) = rx_zf_qam_demod(2, :);
+rx_in_bit = de2bi(rx_decode);
+
+%% - - - Error - - - %%
+[numErrors, ber] = biterr(rx_in_bit(:), randi_bit(:));
 
 %% - - - Plot - - - %%
 % figure(1)
