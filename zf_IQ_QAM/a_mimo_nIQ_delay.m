@@ -8,6 +8,8 @@ jay = sqrt(-1);
 fc = 10e3;
 fs = 50e3;
 QAM_order = 16;
+rx_num = 2;
+tx_num = 2;
 k = log2(QAM_order);
 symble_per_time = 1000;
 sample_per_symbol = 100;    % fs = smple_rate * sample_per_symbol
@@ -26,17 +28,20 @@ randi_bit = de2bi(randi_dec, k);    % 误码率统计用
 info = qammod(randi_dec, QAM_order);
 
 %% - - - Channel- - - %%
-H_base = [0.8, 0.5; 0.3, 0.6];
+H_base = [0.8, 0.5 + 0.1j; 0.3, 0.6 + 0.2j];
 H_fliplr = conj(fliplr(H_base));
 H_fliplr(:, 2) = -H_fliplr(:, 2);
 H = [H_base; H_fliplr];
 inv_H = (H' * H) \ H';
 
+H_delay = imag(H_base(:));
+H_max_delay = max(H_delay);
+length_delay = H_max_delay * fs;
 %% - - - STBC - - - %%
 stbc_temp = kron(reshape(info, 2, []), ones(1, 2));
 stbc_temp(1 , 2 : 2 : end) = conj(stbc_temp(1 , 2 : 2 : end));
 stbc_temp(2 , 2 : 2 : end) = -conj(stbc_temp(2 , 2 : 2 : end));
-stbc_temp(:, 2 : 2 : end) = flip(stbc_temp(:, 2: 2: end));
+stbc_temp(:,   2 : 2 : end) = flip(stbc_temp(:, 2: 2: end));
 
 %% - - - ZF - - - %%
 coded_info = stbc_temp;
@@ -52,9 +57,10 @@ IQ_zf_mod(1, :) = real(reshape(IQ_zf_mod_temp(1, :, :), 1, []));
 IQ_zf_mod(2, :) = real(reshape(IQ_zf_mod_temp(2, :, :), 1, []));
 
 %% - - - RX - - - %%
-for counter_i = 1 : length(IQ_zf_mod)
-    rx_temp(:, counter_i) = H_base * IQ_zf_mod(:, counter_i);
-end
+rx_temp_pre = zeros(1, length_delay);
+rx_temp = zeros(1, length(IQ_zf_mod));
+rx_temp(1, :) = H_base(1, 1) * IQ_zf_mod(1, :);
+rx_temp(1, :) = rx_temp(1, :)  + H_base(1, 2) * [rx_temp_pre, IQ_zf_mod(1, :)];
 
 %% - - - IQ Demod - - - %%
 rx_data.one = reshape(rx_temp(1, :), 100, []);
