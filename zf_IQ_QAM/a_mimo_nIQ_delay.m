@@ -35,8 +35,10 @@ H = [H_base; H_fliplr];
 inv_H = (H' * H) \ H';
 
 H_delay = imag(H_base(:));
+H_gain = real(H_base(:));
 H_max_delay = max(H_delay);
-length_delay = H_max_delay * fs;
+delay_length = H_delay * fs;
+delay_length_post_zeros = max(delay_length) - delay_length; % 在接收信号后端补零
 %% - - - STBC - - - %%
 stbc_temp = kron(reshape(info, 2, []), ones(1, 2));
 stbc_temp(1 , 2 : 2 : end) = conj(stbc_temp(1 , 2 : 2 : end));
@@ -57,14 +59,15 @@ IQ_zf_mod(1, :) = real(reshape(IQ_zf_mod_temp(1, :, :), 1, []));
 IQ_zf_mod(2, :) = real(reshape(IQ_zf_mod_temp(2, :, :), 1, []));
 
 %% - - - RX - - - %%
-rx_temp_pre = zeros(1, length_delay);
-rx_temp = zeros(1, length(IQ_zf_mod));
-rx_temp(1, :) = H_base(1, 1) * IQ_zf_mod(1, :);
-rx_temp(1, :) = rx_temp(1, :)  + H_base(1, 2) * [rx_temp_pre, IQ_zf_mod(1, :)];
-
+rx_temp(1, :) = [zeros(1, delay_length(1)), H_gain(1) * IQ_zf_mod(1, :), zeros(1, delay_length_post_zeros(1))] ...
+                        + [zeros(1, delay_length(3)), H_gain(3) * IQ_zf_mod(2, :), zeros(1, delay_length_post_zeros(3))];
+                   
+rx_temp(2, :) = [zeros(1, delay_length(2)), H_gain(1) * IQ_zf_mod(2, :), zeros(1, delay_length_post_zeros(2))] ...
+                         + [zeros(1, delay_length(4)), H_gain(4) * IQ_zf_mod(1, :), zeros(1, delay_length_post_zeros(4))];
+%%% 因为有延时，接收信号长度相比发射信号长度会变长                  
 %% - - - IQ Demod - - - %%
-rx_data.one = reshape(rx_temp(1, :), 100, []);
-rx_data.two = reshape(rx_temp(2, :), 100, []);
+rx_data.one = reshape(rx_temp(1,1 : 100000), 100, []);
+rx_data.two = reshape(rx_temp(2,1 : 100000), 100, []);
 rx_zf_info(1, :) = demodIQ(deCos, deSin, rx_data.one, sample_per_symbol);
 rx_zf_info(2, :) = demodIQ(deCos, deSin, rx_data.two, sample_per_symbol);
 
@@ -81,7 +84,6 @@ rx_zf_qam_demod(2, :) = qamdemod(stbc_est(2, :), QAM_order);
 rx_decode = zeros(1, 2 * length(rx_zf_qam_demod));
 rx_decode(1 : 2 :end) = rx_zf_qam_demod(1, :);
 rx_decode(2 : 2 :end) = rx_zf_qam_demod(2, :);
-
 rx_in_bit = de2bi(rx_decode);
 
 %% - - - Error - - - %%
