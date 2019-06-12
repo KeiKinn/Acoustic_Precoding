@@ -1,7 +1,7 @@
 clear all;
 close all;
 clc
-% 2发2收的MIMO，发射采用 Alamouti STBC ，zf预编码后在模拟域调制输出
+% 2发2收的MIMO，发射采用 Alamouti STBC ，zf预编码(尚未实现)后在模拟域调制输出
 % 不包含信道估计
 % 添加不同信噪比下的stbc+IQ调制性能分析，为下一步多径与precoding做准备
 jay = sqrt(-1);
@@ -66,8 +66,8 @@ rx_temp(2, :) = [zeros(1, delay_length(2)), H_gain(1) * IQ_zf_mod(2, :), zeros(1
                          + [zeros(1, delay_length(4)), H_gain(4) * IQ_zf_mod(1, :), zeros(1, delay_length_post_zeros(4))];
 %%% 因为有延时，接收信号长度相比发射信号长度会变长                  
 %% - - - IQ Demod - - - %%
-rx_data.one = reshape(rx_temp(1,1 : 100000), 100, []);
-rx_data.two = reshape(rx_temp(2,1 : 100000), 100, []);
+rx_data.one = reshape(rx_temp(1,1 : length(DataTim)), 100, []);
+rx_data.two = reshape(rx_temp(2,1 : length(DataTim)), 100, []);
 rx_zf_info(1, :) = demodIQ(deCos, deSin, rx_data.one, sample_per_symbol);
 rx_zf_info(2, :) = demodIQ(deCos, deSin, rx_data.two, sample_per_symbol);
 
