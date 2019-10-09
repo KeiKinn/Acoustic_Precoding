@@ -3,3 +3,5 @@
 
 # ignore file
 *.asv
+zf_IQ_QAM/DSTS_MIMO_psk1.m
+zf_IQ_QAM/Alamouti_cm.m

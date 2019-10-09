@@ -28,7 +28,8 @@ randi_bit = de2bi(randi_dec, k);    % 误码率统计用
 info = qammod(randi_dec, QAM_order);
 
 %% - - - Channel- - - %%
-H_base = [0.8, 0.5 + 0.1j; 0.3, 0.6 + 0.2j];
+% H_base : [h11, h12; h21, h22]; h_rt: r: 接收 t: 发射
+H_base = [0.8, 0.5 + 0.1j; 0.3 + 0.2j, 0.6];
 H_fliplr = conj(fliplr(H_base));
 H_fliplr(:, 2) = -H_fliplr(:, 2);
 H = [H_base; H_fliplr];
@@ -59,11 +60,13 @@ IQ_zf_mod(1, :) = real(reshape(IQ_zf_mod_temp(1, :, :), 1, []));
 IQ_zf_mod(2, :) = real(reshape(IQ_zf_mod_temp(2, :, :), 1, []));
 
 %% - - - RX - - - %%
+% y_1 = h_11 * x_1 + h_12 * x_2;
+% y_2 = h_21 * x_1 + h_22 * x_2;
 rx_temp(1, :) = [zeros(1, delay_length(1)), H_gain(1) * IQ_zf_mod(1, :), zeros(1, delay_length_post_zeros(1))] ...
-                        + [zeros(1, delay_length(3)), H_gain(3) * IQ_zf_mod(2, :), zeros(1, delay_length_post_zeros(3))];
+                         + [zeros(1, delay_length(3)), H_gain(3) * IQ_zf_mod(2, :), zeros(1, delay_length_post_zeros(3))];
                    
-rx_temp(2, :) = [zeros(1, delay_length(2)), H_gain(1) * IQ_zf_mod(2, :), zeros(1, delay_length_post_zeros(2))] ...
-                         + [zeros(1, delay_length(4)), H_gain(4) * IQ_zf_mod(1, :), zeros(1, delay_length_post_zeros(4))];
+rx_temp(2, :) = [zeros(1, delay_length(2)), H_gain(2) * IQ_zf_mod(1, :), zeros(1, delay_length_post_zeros(2))] ...
+                         + [zeros(1, delay_length(4)), H_gain(4) * IQ_zf_mod(2, :), zeros(1, delay_length_post_zeros(4))];
 %%% 因为有延时，接收信号长度相比发射信号长度会变长                  
 %% - - - IQ Demod - - - %%
 rx_data.one = reshape(rx_temp(1,1 : length(DataTim)), 100, []);
