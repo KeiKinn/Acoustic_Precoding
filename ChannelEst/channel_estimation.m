@@ -5,12 +5,16 @@ clc;
 % 信道估计
 %尝试使用LFM作为估计信号，在接收端做自相关获取信道
 %的信道响应，根据冲击响应的值得到估计信道HEst
-plot_flag = 1;
+plot_flag = 0;
 jay = sqrt(-1);
 f1 = 10e3;
 f2 = 20e3;
-t = 0.02;
+t = 0.02048;
 fs = 50e3;
+fraction =  64;
+frequencyXaxis = (0 : pi/fraction : pi);
+frequencyXaxis = frequencyXaxis(1 : 64)';
+eta = 1e-2;    % Learning rate for LMS
 H_base = [0.8, 0.5 + 0.1j, 0.3+ 0.2j, 0.6 + 0.4j];
 
 pathDelays = [0 200 800 1200 2300 3700]*1e-9;    % sec
@@ -19,7 +23,7 @@ fD = 50;
 
 %% - - - Gen LFM - - - %%
 LFM_S = genLFM(f1, f2, t, fs);
-LFM_S = hilbert(LFM_S);
+% LFM_S = hilbert(LFM_S);
 
 %% - - - Multipath - - - %%
 % timeDelay(1, :) = floor(imag(H_base) * t * fs);   % zeropadding for delay
@@ -36,21 +40,41 @@ rayChan = comm.RayleighChannel(...
     'MaximumDopplerShift',fD, ...
     'Seed',22, ...
     'PathGainsOutputPort',true);
-
-rxLFMData = rayChan(LFM_S');
+[rxLFMData, pathGains] = step(rayChan, LFM_S');
 rxLFMData = rxLFMData';
 %% - - - Do Something Special - - - %%
-% Wigner-Ville Distribution
-[ttfr,tt,tf] = wv(LFM_S);
 
-[tfr,t,f] = wv(rxLFMData);
+for counter_i = 1 : length(rxLFMData) / fraction
+    LFM_SFraction(counter_i, :) = LFM_S((counter_i - 1) * fraction + 1 : counter_i * fraction);
+    rxLFMDataFraction(counter_i, :) = rxLFMData((counter_i - 1) * fraction + 1 : counter_i * fraction);
+end
 
-% Hough Transform
-[tht, trho, ttheta] = hough(ttfr, tf, tt);
-[ht, rho, theta] = hough(tfr, f, t);
+%% LMS parameter
+W = randn(1, fraction);                % Initial weights of LMS
 
-% WHT Xcorr
- result = xcorr2(tht, ht);
+    for n=1 : length(rxLFMData) / fraction
+
+        y=W.*LFM_SFraction(n,:);                       % Output of channel estimator
+        e = rxLFMDataFraction(n,:) - y;                   % Instantaneous error of LMS
+        W = W + eta * e .* conj(LFM_SFraction(n,:));   % Weight update rule of LMS
+        J(n) = e * e';                          % Instantaneuous squared error
+        
+    end
+    
+    %% Results
+% Impulse response
+[bb]=invfreqz(conj(W'),frequencyXaxis,'complex',5,0);     % Estimated channel impulse response
+% % Wigner-Ville Distribution
+% [ttfr,tt,tf] = wv(LFM_S);
+% 
+% [tfr,t,f] = wv(rxLFMData);
+% 
+% % Hough Transform
+% [tht, trho, ttheta] = hough(ttfr, tf, tt);
+% [ht, rho, theta] = hough(tfr, f, t);
+% 
+% % WHT Xcorr
+%  result = xcorr2(tht, ht);
 
 %% - - - Plot - - - %%
 if plot_flag
