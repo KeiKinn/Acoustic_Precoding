@@ -14,7 +14,7 @@ fs = 50e3;
 fraction =  64;
 frequencyXaxis = (0 : pi/fraction : pi);
 frequencyXaxis = frequencyXaxis(1 : 64)';
-eta = 1e-2;    % Learning rate for LMS
+eta = 1e-3;    % Learning rate for LMS
 H_base = [0.8, 0.5 + 0.1j, 0.3+ 0.2j, 0.6 + 0.4j];
 
 pathDelays = [0 200 800 1200 2300 3700]*1e-9;    % sec
@@ -49,21 +49,23 @@ for counter_i = 1 : length(rxLFMData) / fraction
     rxLFMDataFraction(counter_i, :) = rxLFMData((counter_i - 1) * fraction + 1 : counter_i * fraction);
 end
 
+fftLFM_S = fft(LFM_SFraction, [], 2);
+fftrxLFM_S = fft(rxLFMDataFraction, [], 2);
 %% LMS parameter
 W = randn(1, fraction);                % Initial weights of LMS
 
     for n=1 : length(rxLFMData) / fraction
 
-        y=W.*LFM_SFraction(n,:);                       % Output of channel estimator
-        e = rxLFMDataFraction(n,:) - y;                   % Instantaneous error of LMS
-        W = W + eta * e .* conj(LFM_SFraction(n,:));   % Weight update rule of LMS
+        y=W.*fftLFM_S(n,:);                       % Output of channel estimator
+        e = fftrxLFM_S(n,:) - y;                   % Instantaneous error of LMS
+        W = W + eta * e .* conj(fftLFM_S(n,:));   % Weight update rule of LMS
         J(n) = e * e';                          % Instantaneuous squared error
         
     end
     
     %% Results
 % Impulse response
-[bb]=invfreqz(conj(W'),frequencyXaxis,'complex',5,0);     % Estimated channel impulse response
+impulseResponse=invfreqz(conj(W'),frequencyXaxis,'complex',5,0);     % Estimated channel impulse response
 % % Wigner-Ville Distribution
 % [ttfr,tt,tf] = wv(LFM_S);
 % 
