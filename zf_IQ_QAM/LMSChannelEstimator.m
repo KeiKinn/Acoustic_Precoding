@@ -58,5 +58,4 @@ temp1 = temp1./runs;
 % Impulse response
 H_Est=invfreqz(conj(temp1'), Freq_vector, 'complex', pathNum - 1, 0);     % Estimated channel impulse response
 
-
 end
