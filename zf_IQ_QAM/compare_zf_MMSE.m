@@ -1,5 +1,11 @@
 clear all;
 close all;
+clc;
+
+% 实现MMSE预编码，并对ZF还有MMSE进行对比
+
+clear all;
+close all;
 clc
 % 将数字信号通过IQ调制的方式加载到载波上，并通过多径信道，叠加噪声
 % 整体思路为将数字信号经过QAM调制后，再进行预编码，然后将其进行IQ调制
@@ -88,43 +94,3 @@ rx_zf_bit = de2bi(rx_zf_qam_demod, k);
 counter = counter + 1;
 
 end
-%% - - - Plot - - - %%
-figure(1)
-plot(real(rx_info), imag(rx_info), 'cd')
-hold on;
-plot(real(coded_info), imag(coded_info), 'r*')
-hold on;
-plot(real(rx_zf_info), imag(rx_zf_info), 'o');
-hold on;
-plot(real(info), imag(info),'ko', 'MarkerSize',6 , 'MarkerFaceColor','k');
-grid on;
-legend("ISI Channel without ZF", "ZF Coded","ISI Channel with ZF", "Ideal constellation points", 'FontSize', 16);
-xlabel('RE'); ylabel('IM');
-figloc
-
-figure(2)
-subplot(2, 1, 1)
-stem(-L1 : L2, abs(actual_isi), 'b', 'LineWidth', 1.3);
-legend('ISI Channel', 'FontSize', 12);
-xlabel('Frequency');ylabel('Magnitude');
-grid on;
-title('Absolute values of impulse responses'); % Absolute values of channel impulse response
-subplot(2,1,2)
-stem(-N1-L1 : N2+L2, abs(conv(actual_isi, matrix_zf)), 'LineWidth', 1.3); 
-legend('ISIS Channel + ZF Precoding', 'FontSize', 12);
-xlabel('Frequency');ylabel('Magnitude');
-grid on;
-title('Absolute values of impulse responses'); % Absolute values of channel impulse response
-
-figure('Name', 'BER')
-semilogy(snr, ber, 'LineWidth', 1.5);
-hold on;
-semilogy(snr, ber_zf, 'LineWidth', 1.5);
-grid on;
-legend('BER without ZF', 'BER with ZF', 'location', 'southwest',  'FontSize', 14);
-xlabel('SNR');ylabel('BER');
-title_char = [num2str(QAM_order), 'QAM BER under AWGN & ISI'];
-title(title_char);
-figloc;
-
-
