@@ -66,6 +66,11 @@ W = randn(1, fraction);                % Initial weights of LMS
     %% Results
 % Impulse response
 impulseResponse=invfreqz(conj(W'),frequencyXaxis,'complex',5,0);     % Estimated channel impulse response
+
+Hest = LMSChannelEstimator(H_base);
+%%
+% 
+% 
 % % Wigner-Ville Distribution
 % [ttfr,tt,tf] = wv(LFM_S);
 % 

@@ -1,6 +1,6 @@
 function H_Est = LMSChannelEstimator(channelState)
 %% Initializing simulation parameters
-runs = 10;     % Number of Monte Carlo simulations (runs)
+MentoCarloNum = 10;     % Number of Monte Carlo simulations (runs)
 temp1 = 0;     % temporary estimated coefficients of channel (for each run)
 N = (2^10);    % Number of samples
 Bits = 2;      % For modulation    
@@ -15,11 +15,11 @@ channel_impulse_response = channelState;
 [com_freq, Freq_vector]=freqz(channel_impulse_response, 1, fft_len);
 
 %% Monte Carlos Simulation
-for k = 1 : runs
+for k = 1 : MentoCarloNum
     % Generate Random signal for each independent run
     data = randi([0 ((2^Bits)-1)], 1, N);  % Random signal
     x = pskmod(data, 2^Bits);          % Phase shit keying (PSK) modulation
-    x = awgn(x, -5);
+%     x = awgn(x, -5);
     % zero padding to ensure each frame is of size equals to the channel/frame
 %     x =  lteZadoffChuSeq(1, N - 1)';
     padding=rem(length(x), fft_len);
@@ -45,17 +45,15 @@ desired = sys_out;    % Addition of white gaussian noise (desired signal after d
 W = randn(size(com_freq'));                % Initial weights of LMS
 
     for n=1:signal_length/fft_len
-
         y=W.*signal(n, :);                       % Output of channel estimator
         e = desired(n, :) - y;                   % Instantaneous error of LMS
         W = W + eta * e .* conj(signal(n, :));   % Weight update rule of LMS
         J(n) = e * e';                          % Instantaneuous squared error
-        
     end
    temp1 = temp1 + W;
 end
 % Averaging results
-temp1 = temp1./runs;  
+temp1 = temp1./MentoCarloNum;  
 %% Results
 % Impulse response
 H_Est=invfreqz(conj(temp1'), Freq_vector, 'complex', pathNum - 1, 0);     % Estimated channel impulse response
