@@ -37,7 +37,7 @@ for k = 1 : MentoCarloNum
     
     % Generate desired output signal by (Convolution in time domain or
     % multiplication in frequency domain)
-    sys_out=signal.*repmat(conj(com_freq'), signal_length/fft_len, 1);    % signal after passing through channel
+    sys_out=signal.*repmat(com_freq.', signal_length/fft_len, 1);    % signal after passing through channel
 
 desired = sys_out;    % Addition of white gaussian noise (desired signal after disturbance)
 
