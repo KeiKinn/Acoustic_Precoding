@@ -3,14 +3,30 @@ close all
 clc;
 %% Instruction
 % LS在时域估计，LMS在频域估计
+% 本程序主要面向论文中第三章信道估计小节中对LS算法和LMS算法进行性能评估与对比
 
 %% Basic Para
 lineWidth = 2.2;
-isPlot = 1;
+isPlot = 0;
+MC = 10
+marker_color = [...
+    0.0000    0.4470    0.7410;...
+    0.8500    0.3250    0.0980;...
+    0.9290    0.6940    0.1250;...
+    0.4940    0.1840    0.5560;...
+    0.4660    0.6740    0.1880;...
+    0.3010    0.7450    0.9330;...
+    0.6350    0.0780    0.1840;...
+    0.7500    0.7500    0.0000;...
+    0.7500    0.0000    0.7500;...
+    0.0000    0.5000    0.0000;...
+    0.0000    0.0000    1.0000;...
+    1.0000    0.0000    0.0000];
 
-SNR = 15; %Signal to noise ratio
+SNR = 6; %Signal to noise ratio
 Rs = 63; %Let's define symbol rate for the plotting purposes
 errorResult = [];
+mc_errortemp = zeros(2, 31);
 %% Channel creation and channel modelling
 p = [0.19+.56j .45-1.28j -.14-.53j -.19+.23j .33+.51j]; % Example complex channel model
 [H,f]=freqz(p,1,-Rs/2:1:Rs/2,Rs);
@@ -19,8 +35,9 @@ L1=1; % Channel maximum tap is the second one
 %% Creation of the data
 N = (2^10);    % Number of samples
 Bits = 2;      % For modulation
-for SNR = 15
-    index = SNR + 11;
+for mc = 1 : MC
+for SNR = -20:10
+    index = SNR + 21;
     data = randi([0 ((2^Bits)-1)], 1, N);  % Random signal
     Ak = pskmod(data, 2^Bits);          % Phase shit keying (PSK) modulation
     % Ak =  lteZadoffChuSeq(1, N - 1)'; % ZC sequnence
@@ -45,7 +62,7 @@ for SNR = 15
     %     LSk = filter(p_LS, 1, Ak);
     %     e_LS = LSk(L1+1 : end) - Rk;
     e_LS = HE - H;
-    errorResult(1, index) = mean(e_LS) ;
+    errorResult(1, index) = std(abs(e_LS)) ;
     
     %% LMS
     eta =2.9e-4; % step size
@@ -63,16 +80,16 @@ for SNR = 15
         W = W + eta * conj(fft_Ak_frac(n, :)) .*e;
         J(n) = e * e';
     end
-     e_LMS = W - H;
-    errorResult(2, index) =mean(e_LMS) ;
+    e_LMS = W - H;
+    errorResult(2, index) =std(abs(e_LMS)) ;
     %% Plotting amplitude response of the channel:
     if isPlot
         figure(2)
-        plot(20*log10(abs(H)),'b', 'LineWidth', lineWidth);
+        plot(20*log10(abs(H)), 'color', marker_color(1, :), 'LineWidth', lineWidth);
         hold on
-        plot(20*log10(abs(HE)), 'LineWidth', lineWidth);
+        plot(20*log10(abs(HE)), 'color',marker_color(2, :), 'LineWidth', lineWidth);
         hold on
-        plot(20*log10(abs(W)), 'r', 'LineWidth', lineWidth);
+        plot(20*log10(abs(W)), 'color',marker_color(5, :), 'LineWidth', lineWidth);
         legend('Channel','LS Channel Estimate', 'LMS Channel Estimation');
         xlabel('Frequency[kHz] ');ylabel('Amplitude response [dB]');
         title('Campare Between LMS and LS on Channel Estimation in Channel Frequency Response');
@@ -81,20 +98,40 @@ for SNR = 15
     end
     
 end
-% %% Error
-% figure('Name', 'error')
-% plot(abs(errorResult(1,:)));
-% hold on
-% plot(abs(errorResult(2, :)))
+mc_errortemp = mc_errortemp + errorResult;
+end
+%% Error
+figure('Name', 'error')
+semilogy([-20:10], mc_errortemp(1,:)/10, 'LineWidth', lineWidth);
+hold on
+semilogy([-20:10], mc_errortemp(2,:)/10, 'LineWidth', lineWidth);
+xlabel('SNR[dB]');ylabel('MSE');
+legend('LS','LMS');
+title('Compare MSE between LS and LSM')
+grid on
+figloc
 
 %% end
 % figure(3)
-% stem(-L1:length(p)-L1-1,abs(p),'k');
+% % subplot(211)
+% stem(-L1:length(p)-L1-1,abs(p),'b', 'LineWidth', lineWidth);
+% grid on;
 % hold on;
-% stem(-L1:length(p_LS)-L1-1,abs(p_LS),'r');
+% % LS result
+% stem(-L1:length(p_LS)-L1-1,abs(p_LS),'r', 'LineWidth', lineWidth);
 % legend('Channel','LS channel estimate');
 % title('Absolute values of the impulse responses')
-% hold off;
+% hold on;
+% % LMS result
+% stem(-L1:length(P_LMS)-L1-1,abs(P_LMS),'k', 'LineWidth', lineWidth);
+% legend('Channel','LS channel estimate', 'LMS channel estimate');
+% title('Absolute values of the impulse responses')
+% % subplot(212)
+% % plot(20*log10(abs(H)), 'color', marker_color(1, :), 'LineWidth', lineWidth);
+% % xlabel('Frequency[kHz] ');ylabel('Amplitude response [dB]');
+% % title('Values of Frequency Response')
+% % grid on
+% % hold off;
 % figloc
 
 % %% MSE Equalizer (example with 10000 training symbols)
