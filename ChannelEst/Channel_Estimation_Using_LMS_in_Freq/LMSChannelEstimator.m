@@ -1,3 +1,4 @@
+% 实现太复杂，暂时弃之不用
 function H_Est = LMSChannelEstimator(channelState)
 %% Initializing simulation parameters
 MentoCarloNum = 10;     % Number of Monte Carlo simulations (runs)

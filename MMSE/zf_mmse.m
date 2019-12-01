@@ -1,3 +1,4 @@
+% 本程序主要面向论文中第三章预编码方案中的mmse和zf预编码方案的性能对比
 clear all
 close all
 clc;
