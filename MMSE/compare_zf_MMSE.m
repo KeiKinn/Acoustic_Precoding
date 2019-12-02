@@ -6,12 +6,13 @@ clc;
 
 %% Basic Para
 isPlot = 0;
-MCNum = 1;
+lineWidth = 2.2;
+MCNum = 300;
 Nt=2; % transmitter number
 Nr=2; % receiver number
 ea=1;
 es=ea*Nt;
-SNR=[-20:0.1:0];
+SNR=[-20:2:0];
 % SNR = -4;
 snr = 10.^(SNR/10); % sigma_s / sigma_n for MMSE
 qamOrder = 16;
@@ -29,18 +30,22 @@ tempZF =zeros(1, length(SNR));
 H=sqrt(1/2)*(randn(Nr,Nt)+1i*randn(Nr,Nt));
 
 for MC = 1 : MCNum
+    if ~mod(MC, 100)
+        display(floor(MC/100));
+    end
     for n = 1 : length(SNR)
         %         %% Channel
         %         H=sqrt(1/2)*(randn(Nr,Nt)+1i*randn(Nr,Nt));
         
         %% MMSE Precoding
-        mmse_F=H'/(H*H'+Nt/snr(n)*eye(Nt));
-        beta_mmse=sqrt(es/norm(mmse_F,'fro').^2);
-        F_mmse=beta_mmse*mmse_F;
+        mmse_F = H'/(H*H'+Nt/snr(n)*eye(Nt));
+        beta_mmse = sqrt(es/norm(mmse_F,'fro').^2);
+        F_mmse = beta_mmse*mmse_F;
+        
         %% ZF Precoding
         zf_F = H'/(H*H');
         beta_zf=sqrt(es/norm(zf_F,'fro').^2);
-        F_zf=beta_zf*zf_F;
+        F_zf=beta_zf * zf_F;
         
         %% Signal in Transmitter
         [info, randi_bit] = genQAM(qamOrder, symbolNum);
@@ -60,19 +65,20 @@ for MC = 1 : MCNum
         
         %% Receiver
         H_pseSTBC = H;
-        invPseSTBC = invPseH(H_pseSTBC);    % Psedo Inverse for STBC   
+        invPseSTBC = invPseH(H_pseSTBC);    % Psedo Inverse for STBC
         rxSTBC = shapeMat(dataSTBC);
         deSTBC = invPseSTBC * rxSTBC;
         
         H_pseMMSE = H * F_mmse;
-        invPseMMSE = invPseH(H_pseMMSE); % Psedo Inverse for MMSE-STBC   
+        invPseMMSE = invPseH(H_pseMMSE); % Psedo Inverse for MMSE-STBC
         rxMMSE = shapeMat(dataMMSE);
         deMMSE = invPseMMSE * rxMMSE; % Decode STBC
         
         H_pseZF = H * F_zf;
-        invPseZF = invPseH(H_pseZF);      
+        invPseZF = invPseH(H_pseZF);
         rxZF = shapeMat(dataZF);
         deZF = invPseZF * rxZF;
+        
         %% BER
         de_bit_STBC = qam2bit(deSTBC, qamOrder);
         de_bit_MMSE= qam2bit(deMMSE, qamOrder);
@@ -123,15 +129,16 @@ if isPlot
     figloc
     
     figure('Name', 'MC ber')
-    semilogy(SNR, berSTBC / MCNum);
+    semilogy(SNR, berSTBC / MCNum, 'LineWidth', lineWidth);
     hold on;
-    semilogy(SNR, berMMSE / MCNum);
+    semilogy(SNR, berMMSE / MCNum, 'LineWidth', lineWidth);
     hold on;
-    semilogy(SNR, berZF / MCNum);
+    semilogy(SNR, berZF / MCNum, 'LineWidth', lineWidth);
     hold off;
     grid on;
     xlabel('Symbol SNR(dB)');ylabel('BER');
-    legend('Only STBC', 'MMSE Precoder','ZF Precoder')
+    %     legend('ZF + STBC', 'MMSE + STBC','Only STBC')
+    legend('Only STBC', 'MMSE + STBC','ZF + STBC')
     title('Compare among only STBC, MMSE and ZF precoder')
     figloc;
 end
