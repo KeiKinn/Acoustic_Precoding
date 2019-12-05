@@ -7,14 +7,13 @@ clc;
 %% Basic Para
 isPlot = 0;
 lineWidth = 2.2;
-marker_style = {'o-','s--','v-.','+:','<-','>--','x-.','^:','*-','d--','h-.','p:'};
-MCNum = 100;
+MCNum = 1;
 Nt=2; % transmitter number
 Nr=2; % receiver number
 ea=1;
 es=ea*Nt;
 SNR=[-20:2:0];
-% SNR = -6;
+% SNR = -4;
 snr = 10.^(SNR/10); % sigma_s / sigma_n for MMSE
 qamOrder = 16;
 symbolNum = 1e3;
@@ -130,16 +129,16 @@ if isPlot
     figloc
     
     figure('Name', 'MC ber')
-    semilogy(SNR, berSTBC / MCNum, marker_style{1}, 'LineWidth', lineWidth);
+    semilogy(SNR, berSTBC / MCNum, 'LineWidth', lineWidth);
     hold on;
-    semilogy(SNR, berMMSE / MCNum, marker_style{2}, 'LineWidth', lineWidth);
+    semilogy(SNR, berMMSE / MCNum, 'LineWidth', lineWidth);
     hold on;
-    semilogy(SNR, berZF / MCNum, marker_style{3}, 'LineWidth', lineWidth);
+    semilogy(SNR, berZF / MCNum, 'LineWidth', lineWidth);
     hold off;
     grid on;
     xlabel('Symbol SNR(dB)');ylabel('BER');
-        legend('ZF + STBC', 'MMSE + STBC','Only STBC')
-%     legend('Only STBC', 'MMSE + STBC','ZF + STBC')
+    %     legend('ZF + STBC', 'MMSE + STBC','Only STBC')
+    legend('Only STBC', 'MMSE + STBC','ZF + STBC')
     title('Compare among only STBC, MMSE and ZF precoder')
     figloc;
 end
