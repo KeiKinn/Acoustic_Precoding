@@ -18,7 +18,7 @@ eta = 1e-3;    % Learning rate for LMS
 H_base = [0.8, 0.5 + 0.1j, 0.3+ 0.2j, 0.6 + 0.4j];
 
 pathDelays = [0 200 800 1200 2300 3700]*1e-9;    % sec
-avgPathGains = [0 -0.9 -4.9 -8 -7.8 -23.9];      % dB
+avgPathGains = [0 -3.9 -4.9 -8 -9.8 -23.9];      % dB
 fD = 50;
 
 %% - - - Gen LFM - - - %%
@@ -39,7 +39,8 @@ rayChan = comm.RayleighChannel(...
     'RandomStream','mt19937ar with seed', ...
     'MaximumDopplerShift',fD, ...
     'Seed',22, ...
-    'PathGainsOutputPort',true);
+    'PathGainsOutputPort',true,...
+'Visualization','Impulse and frequency responses');
 [rxLFMData, pathGains] = step(rayChan, LFM_S');
 rxLFMData = rxLFMData';
 %% - - - Do Something Special - - - %%

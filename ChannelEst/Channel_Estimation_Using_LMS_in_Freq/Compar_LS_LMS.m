@@ -8,7 +8,7 @@ clc;
 %% Basic Para
 lineWidth = 2.2;
 isPlot = 0;
-MC = 10
+MC = 10;
 marker_color = [...
     0.0000    0.4470    0.7410;...
     0.8500    0.3250    0.0980;...
@@ -51,19 +51,17 @@ for SNR = -20:10
     % Defining noise scaling factor based on the desired SNR:
     noise_scaling_factor = sqrt(P_s/P_n./10.^(SNR./10));
     Rk_noisy=Rk+noise*noise_scaling_factor; % Received signal
-    
+    Nsig = mdltest(Rk_noisy')
     %% LS
     M = 30; %number of reference symbols used for channel estimation; this is pretty small amount
-    estimate_length = 5; %this defines how long is the channel estimate's impulse response
+    estimate_length = 7; %this defines how long is the channel estimate's impulse response
     A_conv=convmtx(Ak(2:M+1).',estimate_length); % Convolution matrix
     p_LS=((A_conv'*A_conv)\(A_conv'))*Rk_noisy(1:size(A_conv,1)).'; % LS solution
-    [HE,fE]=freqz(p_LS,1,-Rs/2:1:Rs/2,Rs);
     %%% square error
     %     LSk = filter(p_LS, 1, Ak);
     %     e_LS = LSk(L1+1 : end) - Rk;
     e_LS = HE - H;
     errorResult(1, index) = std(abs(e_LS)) ;
-    
     %% LMS
     eta =2.9e-4; % step size
     fft_Ak = fft(Ak, N);

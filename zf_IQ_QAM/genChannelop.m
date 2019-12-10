@@ -38,4 +38,5 @@ for j =1:length(channel_gain)
     channel_gain(j) = 10^(channel_gain(j) / 20);
 end
 channel_delay = channel_delay - min(channel_delay);  
+pause
 end
